@@ -1,3 +1,5 @@
+const { text } = require("express")
+
 const createElement = (type, props, ...children) => {
     if (props === null) props = {}
     return {type, props, children}
@@ -60,3 +62,33 @@ const setAttribute = (dom, key, value) => {
 }
 
 
+const patch = (dom, vdom, parent = dom.parentNode) => {
+    const replace = (ele) => {
+        if (parent) {
+            return parent.replaceChild(el, dom) && el;
+        } else {
+            return el;
+        }
+    }
+    if(typeof vdom == 'object' && typeof vdom.type == 'function'){
+        // its a component
+        return Component.patch(dom, vdom, parent);
+    }
+    else if(typeof vdom != 'object' && dom instanceof Text){
+        //text node
+        if(dom.textContent != vdom){
+            replace(render(vdom, parent));
+        }
+        else{
+            return dom;
+        }
+    }
+    else if(typeof vdom == 'object' && dom instanceof Text){
+        return replace(render(vdom, parent));
+    }
+    else if(typeof vdom == 'object' && dom.nodeName != vdom.type.toUpperCase()){
+        return replace(render(vdom, parent));
+    }
+
+
+}
