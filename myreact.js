@@ -1,5 +1,5 @@
-const { text } = require("express")
 
+/** @jsx createElement */
 const createElement = (type, props, ...children) => {
     if (props === null) props = {}
     return {type, props, children}
@@ -37,7 +37,7 @@ const render = (vdom, parent) => {
 }
 
 const setAttribute = (dom, key, value) => {
-    if(typeof value == 'function' && key.starsWith('on')){
+    if(typeof value == 'function' && key.startsWith('on')){
         const eventType = key.slice(2).toLowerCase();
         dom.__myreactHandlers = dom.__myreactHandlers || {};
         dom.removeEventListener(eventType, dom.__myreactHandlers[eventType]);
@@ -89,6 +89,35 @@ const patch = (dom, vdom, parent = dom.parentNode) => {
     else if(typeof vdom == 'object' && dom.nodeName != vdom.type.toUpperCase()){
         return replace(render(vdom, parent));
     }
+    else if(typeof vdom == 'object' && dom.nodeName == vdom.type.toUpperCase()){
+        const pool = {};
+        const active = document.activeElement;
 
+        [].concat(...dom.childNodes).map( (child, index) => {
+            const key = dom.__myreactKey || `__index_${index}`;
+            pool[key] = child;
+        });
+
+        [].concat(...vdom.children).map((child, index) => {
+            const key = child.props && child.props.key || `__index_${index}`;
+            if(pool[key]){
+                dom.appendChild(patch(pool[key], child));
+            }
+            else{
+                dom.appendChild(render(child, dom));
+            }
+            delete pool[key];
+        });
+        for(const key in pool){
+            const instance = pool[key].__myreactInstance;
+            if(instance) instance.componentWillUnmount();
+            pool[key].remove();
+        }
+        for(const attr of dom.attributes) dom.removeAttribute(attr.name);
+        for(const prop in vdom.props) setAttribute(dom, prop, vdom.props[prop]);
+        active.focus();
+        return dom;
+    }
 
 }
+
