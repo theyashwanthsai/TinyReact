@@ -1,18 +1,22 @@
+(() => { 'use strict';
 
-/** @jsx createElement */
+
+
+
 const createElement = (type, props, ...children) => {
     if (props === null) props = {}
     return {type, props, children}
 }
 
 
-const render = (vdom, parent) => {
-    const mount = (parent) => (ele) => {
-        if(parent){
-            parent.appendChild(ele)
+const render = (vdom, parent=null) => {
+    const mount = (ele) => {
+        if (parent) {
+            return parent.appendChild(ele);
+        } else {
+            return ele;
         }
-        return ele;
-    }
+    };
 
     if (typeof vdom == 'string' || typeof vdom == 'number'){
         return mount(document.createTextNode(vdom));
@@ -121,3 +125,89 @@ const patch = (dom, vdom, parent = dom.parentNode) => {
 
 }
 
+class Component{
+    constructor(props){
+        this.props = props || {};
+        this.state = null;
+    }
+
+    static render(vdom, parent = null){
+        const props = Object.assign({}, vdom.props, {children: vdom.children});
+        if(Component.isPrototypeOf(vdom.type)){
+            const instance = new (vdom.type)(props);
+            instance.componentWillUnmount();
+            instance.base = render(instance.render(), parent);
+            instance.base = __myreactInstance = instance;
+            instance.base__myreactKey = vdom.props.key;
+            instance.componentDidMount();
+            return instance.base;
+        }
+        else{
+            return render(vdom.type(props), parent);
+        }
+    }
+
+    static patch(dom, vdom, parent=dom.parentNode){
+        const props = Object.assign({}, vdom.props, {children: vdom.children});
+        if(dom.__myreactInstance && dom.__myreactInstance.constructor == vdom.type){
+            dom.__myreactInstance.componentWillRecieveProps(props);
+            dom.__myreactInstance.props = props;
+            return patch(dom, dom.__myreactInstance.render(), parent);
+        }
+        else if (Component.isPrototypeOf(vdom.type)) {
+            const ndom = Component.render(vdom, parent);
+            return parent ? (parent.replaceChild(ndom, dom) && ndom) : (ndom);
+        } else if (!Component.isPrototypeOf(vdom.type)) {
+            return patch(dom, vdom.type(props), parent);
+        }
+    }
+
+setState(nextState) {
+        if (this.base && this.shouldComponentUpdate(this.props, nextState)) {
+            const prevState = this.state;
+            this.componentWillUpdate(this.props, nextState);
+            this.state = nextState;
+            patch(this.base, this.render());
+            this.componentDidUpdate(this.props, prevState);
+        } else {
+            this.state = nextState;
+        }
+    }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        return nextProps != this.props || nextState != this.state;
+    }
+
+    componentWillReceiveProps(nextProps) {
+        return undefined;
+    }
+
+    componentWillUpdate(nextProps, nextState) {
+        return undefined;
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        return undefined;
+    }
+
+    componentWillMount() {
+        return undefined;
+    }
+
+    componentDidMount() {
+        return undefined;
+    }
+
+    componentWillUnmount() {
+        return undefined;
+    }
+
+
+
+
+
+}
+
+if (typeof module != 'undefined') module.exports = {createElement, render, Component};
+if (typeof module == 'undefined') window.myreact  = {createElement, render, Component};
+})();
