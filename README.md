@@ -19,8 +19,8 @@ Once the minimal set of changes is calculated, React or the library in use updat
 
 
 # todo
-add tests
-
+- [ ] add tests
+- [ ] add top level view diagram
 
 ## References
 [Gooact: React in 160 lines of JavaScript](https://medium.com/@sweetpalma/gooact-react-in-160-lines-of-javascript-44e0742ad60f)
